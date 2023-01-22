@@ -21,7 +21,7 @@ class ShareHistoryDownloader:
             print("{0} :: downloading.", ts_code)
             since_date = row_data.loc['since_date']
             data_df = pro.daily(ts_code=ts_code, start_date=since_date, end_date=today_date)
-            data_csv_path = os.path.join(config.cleaned_share_list_directory_path, ts_code+".csv")
+            data_csv_path = os.path.join(config.temp_share_history_directory_path, ts_code+".csv")
             data_df.to_csv(data_csv_path, index=False)
 
     def __create_share_date_list(self) -> pd.DataFrame:
