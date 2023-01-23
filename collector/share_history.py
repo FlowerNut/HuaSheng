@@ -50,19 +50,25 @@ class ShareHistoryDownloader:
         return the_share_list
 
     def __update_share_latest_date_if_exist(self, the_share_list: pd.DataFrame) -> pd.DataFrame:
-        files_list = os.listdir(config.cleaned_share_list_directory_path)
+        files_list = os.listdir(config.cleaned_share_history_directory_path)
         if len(files_list):  # 如果列表不为空
             for f in files_list:
                 code = f[0:6]
+                file_path = os.path.join(config.cleaned_share_history_directory_path, f)
                 # 如果code不是纯数字，跳过
                 if not code.isdigit():
                     continue
                 ts_code = f[0:9]
-                df = pd.read_csv(f, index_col='trade_date')
+                df = pd.read_csv(file_path, index_col='trade_date')
                 df = df.sort_index(ascending=True)
                 if not df.empty:
-                    since_date = (df.index[-1] + datetime.timedelta(days=1)).strftime('%Y%m%d')
-                    the_share_list.loc[(df.index == ts_code)]['since_date'] = since_date
+                    latest_date = datetime.datetime.strptime(str(df.index[-1]), "%Y%m%d")
+                    since_date = (latest_date + datetime.timedelta(days=1)).strftime('%Y%m%d')
+                    for _, row_content in the_share_list.iterrows():
+                        if row_content['ts_code'] == "'" + ts_code:
+                            row_content['since_date'] = since_date
+                            print("{0} :: {1}".format(row_content['ts_code'], since_date))
+                            break
         return the_share_list
 
     def __concat_and_update_cleaned_share_history(self):
