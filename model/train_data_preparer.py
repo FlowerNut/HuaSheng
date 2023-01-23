@@ -1,6 +1,5 @@
 from scipy import fft
-from cleaner import share_history
-from cleaner import config as cleaner_config
+from collector import config as collector_config
 import numpy as np
 import pandas as pd
 import os
@@ -12,7 +11,6 @@ class TrainingDataPreparer:
         self.stream_len = 10
         self.label_rule = label_rule  # 输入类, 用于改变训练数据生成的规则；
         self.be_continue = be_continue  # 用于给出指令：重新生成数据，或续上次完成生成数据；
-        self.share_history_class = share_history.ShareHistoryCleaner()
         self.taken_fft_channel_numbers = 8  # 分解成8个周期波型
         self.numbers_of_prediction = self.label_rule.numbers_of_prediction  # 预测明天，后天，共两天； self.__creating_label_df的标签计算需要根据该值调整
         self.data_buffer_days = 618  # 数据决定参与计算fft的日数据量，与cnn的计算深度stream len可以为不同长度
@@ -21,7 +19,7 @@ class TrainingDataPreparer:
     # 单个股票生成特征数据太大，可能要改结构，每次生成数据不存贮，直接训练 ==> 逐个生成训练数据，不存，直接训练出结果，并存贮模型。
     # 对比历史数据文件中股票代码，和训练过的股票代码。找出未训练的训练。
     def __prepare(self):
-        cleaned_share_history_file_list = os.listdir(cleaner_config.cleaned_share_history_directory_path)
+        cleaned_share_history_file_list = os.listdir(collector_config.cleaned_share_history_directory_path)
         if not self.be_continue:
             # 如果文件夹不存在，创建:用于存贮训练数据文件
             trainer_config.build_or_clear_dir(trainer_config.training_data_directory_path)
@@ -55,20 +53,20 @@ class TrainingDataPreparer:
                     self.__prepare_single_share_data(file_name)
 
             
-    def __prepare_single_share_data(self, file_name: str):
-        code = file_name[0:6]
+    def __prepare_single_share_data(self, cleaned_history_file_name: str):
         # 读取历史数据
-        cleaned_share_history_df = self.share_history_class.read_cleaned_share_history_csv(code, datetime_index=True)
+        cleaned_file_path = os.path.join(collector_config.cleaned_share_history_directory_path, cleaned_history_file_name)
+        cleaned_share_history_df = pd.read_csv(cleaned_file_path)
         # 每一股票数据保存一个特征的csv和一个标签的csv
         # 样本量要大于self.data_buff_days，有足够数据计算一次fft，单只股票数据才参与计算
         if cleaned_share_history_df.shape[0] - self.data_buffer_days > self.stream_len:
             # 每一股票:获取数据列的最大值和最小值，并存贮至“auxiliary”文件夹对应的code.csv
             #self.__get_max_min_value_to_csv(code,cleaned_share_history_df)
             # 提取需要的数据列
-            cleaned_share_history_df = cleaned_share_history_df[['closed_price', 'highest_price', 'lowest_price',
-                                                                 'opened_price', 'change_rate', 'traded_volume',
-                                                                 'traded_amount', 'total_share_capital',
-                                                                 'flow_share_capital']]
+            cleaned_share_history_df = cleaned_share_history_df[['open', 'high', 'low',
+                                                                 'close', 'pre_close', 'change',
+                                                                 'pct_chg', 'vol',
+                                                                 'amount']]
             # 列数据归一化
             #cleaned_share_history_df = cleaned_share_history_df.apply(lambda x: (x-np.min(x))/(np.max(x)-np.min(x)))
             # 创建空df用于存贮结果
@@ -105,7 +103,7 @@ class TrainingDataPreparer:
                                                                         fft_composed_periods_prices_df.iloc[current_row_index + self.numbers_of_prediction, :]],
                                                                        axis=1, ignore_index=True)  # 指示具体索引而非范围尾数，需要指针-1
                     # 周期数据按列遍历，首尾相接， 将周期数据合并至pic_df列向量（作为图片识别）
-                    pic_df = pd.concat([pic_df,self.__reshape_df_into_one_row(section_fft_composed_periods_prices_df.T)],
+                    pic_df = pd.concat([pic_df, self.__reshape_df_into_one_row(section_fft_composed_periods_prices_df.T)],
                                        ignore_index=True, sort=False)  # .T转为按频率的列向量，保持同一频率数值相近
                     # 保存至feature_df
                     feature_df = pd.concat([feature_df, pic_df], axis=1, ignore_index=True)
@@ -121,12 +119,12 @@ class TrainingDataPreparer:
             feature_df.columns = ["F{0}".format(x) for x in range(feature_df.shape[1])] 
             label_df.columns = ["L{0}".format(x) for x in range(label_df.shape[1])] 
             # 保存至csv
-            feature_csv_name = os.path.join(trainer_config.feature_data_directory_path,code+".csv")
+            feature_csv_name = os.path.join(trainer_config.feature_data_directory_path, cleaned_history_file_name)
             feature_df.to_csv(feature_csv_name, index=False)
-            print("{0} feature ====> ok!".format(code))
-            label_csv_name = os.path.join(trainer_config.label_data_directory_path,code+".csv")
+            print("{0} feature ====> ok!".format(cleaned_history_file_name[0:6]))
+            label_csv_name = os.path.join(trainer_config.label_data_directory_path, cleaned_history_file_name)
             label_df.to_csv(label_csv_name, index=False)
-            print("{0} label ====> ok!".format(code))
+            print("{0} label ====> ok!".format(cleaned_history_file_name[0:6]))
 
     '''
     def __get_max_min_value_to_csv(self,code:str,df:pd.DataFrame)->None:
@@ -168,10 +166,10 @@ class TrainingDataPreparer:
         pic_df = pd.DataFrame(flatten_data)
         return pic_df
 
-    def __closed_price_fft_into_multiple_periods_prices_df(self,share_history_df:pd.DataFrame,taken_fft_channel_numbers:int)->pd.DataFrame:
-        price_list = share_history_df['closed_price'].to_numpy()
+    def __closed_price_fft_into_multiple_periods_prices_df(self,share_history_df:pd.DataFrame, taken_fft_channel_numbers:int)->pd.DataFrame:
+        price_list = share_history_df['close'].to_numpy()
         column_names = ["F{0}".format(i) for i in range(taken_fft_channel_numbers)]
-        fft_df = pd.DataFrame(columns=column_names) # 结果容器
+        fft_df = pd.DataFrame(columns=column_names)  # 结果容器
         # 将价格移至平均值，变为ac信号
         price_list -= np.average(price_list)
         # 生成价格的fft
@@ -180,11 +178,11 @@ class TrainingDataPreparer:
         # 从fft_y中，寻找｜绝对值｜较大的频率的List index
         fft_y_value_index_descending = np.argsort(np.abs(fft_y))[::-1][0:taken_fft_channel_numbers]
         # 按从大到小的fft_y，逆变生成对应波形
-        for i,v in enumerate(fft_y_value_index_descending):
-            y = np.zeros(len(fft_y),dtype=complex) # 与fft_y同长度的全0 array
-            y[v] = fft_y[v] #按从大到小fft_y替换，用于提取波形
+        for i, v in enumerate(fft_y_value_index_descending):
+            y = np.zeros(len(fft_y), dtype=complex)  # 与fft_y同长度的全0 array
+            y[v] = fft_y[v]  # 按从大到小fft_y替换，用于提取波形
             ifft_data_length = len(price_list) + self.numbers_of_prediction
-            irfft_y = fft.irfft(y,ifft_data_length)
+            irfft_y = fft.irfft(y, ifft_data_length)
             column_name = "F{0}".format(i)
             fft_df[column_name] = irfft_y
         return fft_df

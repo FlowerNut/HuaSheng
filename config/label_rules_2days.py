@@ -10,7 +10,7 @@ class Positive2Days:
     def create_label_df(self, df: pd.DataFrame) -> pd.DataFrame:
         # 初始化label
         label_list = [0.0, 0.0]
-        closed_price_list = df['closed_price'].tolist()
+        closed_price_list = df['close'].tolist()
         # 当天股价大于明天,且升幅大于1%，则标记为1
         if closed_price_list[1] >= closed_price_list[0] * 1.01:
             label_list[0] = 1.0
@@ -20,7 +20,7 @@ class Positive2Days:
         label_df = pd.DataFrame(label_list)
         return label_df
 
-
+'''
 class Negative10Days:
     def __init__(self):
         self.numbers_of_prediction = 10  # 2 weeks
@@ -29,7 +29,7 @@ class Negative10Days:
     def create_label_df(self, df: pd.DataFrame) -> pd.DataFrame:
         # 初始化label
         label_list = [0.0, 0.0]
-        closed_price_list = df['closed_price'].tolist()
+        closed_price_list = df['close'].tolist()
         # 当天股价大于明天,且升幅大于1%，则标记为1
         if closed_price_list[1] < closed_price_list[0]:  # 明天低于昨天
             label_list[0] = 1.0
@@ -38,7 +38,7 @@ class Negative10Days:
             label_list[1] = 1.0
         label_df = pd.DataFrame(label_list)
         return label_df
-
+'''
 
 class Negative2Days:
     def __init__(self):
@@ -48,7 +48,7 @@ class Negative2Days:
     def create_label_df(self, df: pd.DataFrame) -> pd.DataFrame:
         # 初始化label
         label_list = [0.0, 0.0]
-        closed_price_list = df['closed_price'].tolist()
+        closed_price_list = df['close'].tolist()
         # 当天股价大于明天,且升幅大于1%，则标记为1
         if closed_price_list[1] < closed_price_list[0]:  # 明天低于昨天
             label_list[0] = 1.0
