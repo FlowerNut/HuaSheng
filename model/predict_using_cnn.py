@@ -1,6 +1,6 @@
 from model import predict_config as app_config
 import torch
-from cleaner import cleaned_data_iterator
+from collector import share_history_iterator
 import pandas as pd
 from scipy import fft
 import numpy as np
@@ -37,10 +37,8 @@ class PredictByCNN:
             last_row_index = clean_share_df.__len__() - 1  # 索引第1个为0，最后一位索引应为长度-1
             since_row_index = last_row_index - self.__stream_length + 1  # 因需要取stream len日数据作为一组cnn输入，该数据计算截取开始索引
             # 提取需要的数据列
-            clean_share_df = clean_share_df[['closed_price', 'highest_price', 'lowest_price',
-                                                                 'opened_price', 'change_rate', 'traded_volume',
-                                                                 'traded_amount', 'total_share_capital',
-                                                                 'flow_share_capital']]
+            clean_share_df = clean_share_df[['open', 'high', 'low','close', 'pre_close', 'change',
+                                             'pct_chg', 'vol', 'amount']]
             for current_row_index in range(since_row_index, last_row_index + 1):   # +1为了尾索引可以包括 last_row_index所在数据
                 if current_row_index > self.data_buffer_days - 1:
                     # 取当日数据
@@ -69,7 +67,7 @@ class PredictByCNN:
         return feature_available, feature_df
 
     def __closed_price_fft_into_multiple_periods_prices_df(self,share_history_df:pd.DataFrame,taken_fft_channel_numbers:int)->pd.DataFrame:
-        price_list = share_history_df['closed_price'].to_numpy()
+        price_list = share_history_df['close'].to_numpy()
         column_names = ["F{0}".format(i) for i in range(taken_fft_channel_numbers)]
         fft_df = pd.DataFrame(columns=column_names) # 结果容器
         # 将价格移至平均值，变为ac信号
@@ -130,7 +128,10 @@ class PredictByCNN:
         # 输入数据（clean share）更新，由外部程序完成
         predict_pd_table = pd.DataFrame(columns=['code', 'date', 'value1', 'value2'])
         # 遍历clean share
-        for code, cleaned_share_df in cleaned_data_iterator.HistoryCSVIterator():
+        for code, cleaned_share_df in share_history_iterator.HistoryCSVIterator():
+            # 历史数据小于预测要求，路过该股票
+            if len(cleaned_share_df) < self.__stream_length:
+                continue
             latest_date = cleaned_share_df.tail(1).index.values[0]  # 最后一行的第一个值
         # 按最新日期，生成最新一次fft数据
             feature_available, feature_df = self.__single_clean_share_clean_data_to_feature(cleaned_share_df)
