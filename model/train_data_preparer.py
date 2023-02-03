@@ -7,18 +7,21 @@ from model import train_config as trainer_config
 
 
 class TrainingDataPreparer:
-    def __init__(self, label_rule, be_continue=False) -> None:
+    def __init__(self, label_rule, be_continue=False, only_label=False) -> None:
         self.stream_len = 10
         self.label_rule = label_rule  # 输入类, 用于改变训练数据生成的规则；
         self.be_continue = be_continue  # 用于给出指令：重新生成数据，或续上次完成生成数据；
         self.taken_fft_channel_numbers = 8  # 分解成8个周期波型
         self.numbers_of_prediction = self.label_rule.numbers_of_prediction  # 预测明天，后天，共两天； self.__creating_label_df的标签计算需要根据该值调整
         self.data_buffer_days = 618  # 数据决定参与计算fft的日数据量，与cnn的计算深度stream len可以为不同长度
-        self.__prepare()
+        if only_label:
+            self.__prepare_only_label()
+        else:
+            self.__prepare_all()
 
     # 单个股票生成特征数据太大，可能要改结构，每次生成数据不存贮，直接训练 ==> 逐个生成训练数据，不存，直接训练出结果，并存贮模型。
     # 对比历史数据文件中股票代码，和训练过的股票代码。找出未训练的训练。
-    def __prepare(self):
+    def __prepare_all(self):
         cleaned_share_history_file_list = os.listdir(collector_config.cleaned_share_history_directory_path)
         if not self.be_continue:
             # 如果文件夹不存在，创建:用于存贮训练数据文件
@@ -34,7 +37,7 @@ class TrainingDataPreparer:
                     #continue
                 # 如果code不是纯数字，跳过
                 if code.isdigit():
-                    self.__prepare_single_share_data(file_name)
+                    self.__prepare_feature_and_label_data_per_share(file_name)
         else:
             created_training_data_list = os.listdir(trainer_config.feature_data_directory_path)
             todo_file_name_list = []
@@ -50,10 +53,43 @@ class TrainingDataPreparer:
                     #continue
                 # 如果code不是纯数字，跳过
                 if code.isdigit():
-                    self.__prepare_single_share_data(file_name)
+                    self.__prepare_feature_and_label_data_per_share(file_name)
 
-            
-    def __prepare_single_share_data(self, cleaned_history_file_name: str):
+    def __prepare_only_label(self):
+        cleaned_share_history_file_list = os.listdir(collector_config.cleaned_share_history_directory_path)
+        if not self.be_continue:
+            # 如果文件夹不存在，创建:用于存贮训练数据文件
+            #trainer_config.build_or_clear_dir(trainer_config.training_data_directory_path)
+            #trainer_config.build_or_clear_dir(trainer_config.feature_data_directory_path)
+            trainer_config.build_or_clear_dir(trainer_config.label_data_directory_path)
+            # trainer_config.build_or_clear_dir(trainer_config.mapminmax_record_data_path)
+            # 遍历历史数据文件夹中文件
+            for file_name in cleaned_share_history_file_list:
+                code = file_name[0:6]
+                # 因创业版数据长度有限，影响模型精度，此处跳过3字头的创业版数据，不生成模型数据
+                #if code[0] == '3':
+                    #continue
+                # 如果code不是纯数字，跳过
+                if code.isdigit():
+                    self.__prepare_only_label_data_per_share(file_name)
+        else:
+            created_training_data_list = os.listdir(trainer_config.label_data_directory_path)
+            todo_file_name_list = []
+            for file_name in cleaned_share_history_file_list:
+                if file_name in created_training_data_list:
+                    continue
+                else:
+                    todo_file_name_list.append(file_name)
+            for file_name in todo_file_name_list:
+                code = file_name[0:6]
+                # 因创业版数据长度有限，影响模型精度，此处跳过3字头的创业版数据，不生成模型数据
+                #if code[0] == '3':
+                    #continue
+                # 如果code不是纯数字，跳过
+                if code.isdigit():
+                    self.__prepare_only_label_data_per_share(file_name)
+
+    def __prepare_feature_and_label_data_per_share(self, cleaned_history_file_name: str):
         # 读取历史数据
         cleaned_file_path = os.path.join(collector_config.cleaned_share_history_directory_path, cleaned_history_file_name)
         cleaned_share_history_df = pd.read_csv(cleaned_file_path)
@@ -126,35 +162,39 @@ class TrainingDataPreparer:
             label_df.to_csv(label_csv_name, index=False)
             print("{0} label ====> ok!".format(cleaned_history_file_name[0:6]))
 
-    '''
-    def __get_max_min_value_to_csv(self,code:str,df:pd.DataFrame)->None:
-        auxiliary_df = pd.DataFrame(columns=[['code','closed_price_min','closed_price_max','highest_price_min','highest_price_max',\
-            'lowest_price_min','lowest_price_max','opened_price_min','opened_price_max','change_rate_min','change_rate_max',\
-                'traded_volume_min','traded_volume_max','traded_amount_min','traded_amount_max','total_share_capital_min','total_share_capital_max',\
-                    'flow_share_capital_min','flow_share_capital_max']])
-        auxiliary_df.loc[0,'code'] = code
-        auxiliary_df.loc[0,'closed_price_min'] =df.loc[:,'closed_price'].min()
-        auxiliary_df.loc[0,'closed_price_max'] =df.loc[:,'closed_price'].max()
-        auxiliary_df.loc[0,'highest_price_min'] =df.loc[:,'highest_price'].min()
-        auxiliary_df.loc[0,'highest_price_max'] =df.loc[:,'highest_price'].max()
-        auxiliary_df.loc[0,'lowest_price_min'] =df.loc[:,'lowest_price'].min()
-        auxiliary_df.loc[0,'lowest_price_max'] =df.loc[:,'lowest_price'].max()
-        auxiliary_df.loc[0,'opened_price_min'] =df.loc[:,'opened_price'].min()
-        auxiliary_df.loc[0,'opened_price_max'] =df.loc[:,'opened_price'].max()
-        auxiliary_df.loc[0,'change_rate_min'] =df.loc[:,'change_rate'].min()
-        auxiliary_df.loc[0,'change_rate_max'] =df.loc[:,'change_rate'].max()
-        auxiliary_df.loc[0,'traded_volume_min'] =df.loc[:,'traded_volume'].min()
-        auxiliary_df.loc[0,'traded_volume_max'] =df.loc[:,'traded_volume'].max()
-        auxiliary_df.loc[0,'traded_amount_min'] =df.loc[:,'traded_amount'].min()
-        auxiliary_df.loc[0,'traded_amount_max'] =df.loc[:,'traded_amount'].max()
-        auxiliary_df.loc[0,'total_share_capital_min'] =df.loc[:,'total_share_capital'].min()
-        auxiliary_df.loc[0,'total_share_capital_max'] =df.loc[:,'total_share_capital'].max()
-        auxiliary_df.loc[0,'flow_share_capital_min'] =df.loc[:,'flow_share_capital'].min()
-        auxiliary_df.loc[0,'flow_share_capital_max'] =df.loc[:,'flow_share_capital'].max()
-        auxiliary_df.set_index('code',inplace=True)
-        auxiliary_csv_path = os.path.join(trainer_config.mapminmax_record_data_path,code+".csv")
-        auxiliary_df.to_csv(auxiliary_csv_path)
-    '''
+    def __prepare_only_label_data_per_share(self, cleaned_history_file_name: str):
+        # 读取历史数据
+        cleaned_file_path = os.path.join(collector_config.cleaned_share_history_directory_path, cleaned_history_file_name)
+        cleaned_share_history_df = pd.read_csv(cleaned_file_path)
+        # 每一股票数据保存一个特征的csv和一个标签的csv
+        # 样本量要大于self.data_buff_days，有足够数据计算一次fft，单只股票数据才参与计算
+        if cleaned_share_history_df.shape[0] - self.data_buffer_days > self.stream_len:
+            # 每一股票:获取数据列的最大值和最小值，并存贮至“auxiliary”文件夹对应的code.csv
+            #self.__get_max_min_value_to_csv(code,cleaned_share_history_df)
+            # 提取需要的数据列
+            cleaned_share_history_df = cleaned_share_history_df[['open', 'high', 'low',
+                                                                 'close', 'pre_close', 'change',
+                                                                 'pct_chg', 'vol',
+                                                                 'amount']]
+            # 列数据归一化
+            #cleaned_share_history_df = cleaned_share_history_df.apply(lambda x: (x-np.min(x))/(np.max(x)-np.min(x)))
+            # 创建空df用于存贮结果
+            #feature_df = pd.DataFrame()
+            label_df = pd.DataFrame()
+            for current_row_index in range(cleaned_share_history_df.shape[0]-self.numbers_of_prediction-1): # 从self.data_buffer_days开始，至（历史数据长度-self.numbers_of_prediction) (作为索引，需要再-1)
+                # 跳过self.data_buffer_days日，以使得fft波形完整
+                if current_row_index > self.data_buffer_days:
+                    # ----------生成标签数据----------
+                    # 当天至预测范围内的数据，按行截取
+                    # 索引原因，需要再+1
+                    section_df = cleaned_share_history_df.iloc[current_row_index:current_row_index + self.numbers_of_prediction+1, :].copy()
+                    label_df = pd.concat([label_df, self.label_rule.create_label_df(section_df)], axis=1, ignore_index=True)
+            label_df = label_df.T
+            label_df.columns = ["L{0}".format(x) for x in range(label_df.shape[1])]
+            # 保存至csv
+            label_csv_name = os.path.join(trainer_config.label_data_directory_path, cleaned_history_file_name)
+            label_df.to_csv(label_csv_name, index=False)
+            print("{0} label ====> ok!".format(cleaned_history_file_name[0:6]))
 
     def __reshape_df_into_one_row(self,df:pd.DataFrame)->pd.DataFrame: #输出为多行单列的“向量” df
         column_count = df.shape[1]
@@ -186,6 +226,9 @@ class TrainingDataPreparer:
             column_name = "F{0}".format(i)
             fft_df[column_name] = irfft_y
         return fft_df
+
+
+
 '''
     def __creating_label_df(self, df: pd.DataFrame)-> pd.DataFrame:
         # 初始化label
