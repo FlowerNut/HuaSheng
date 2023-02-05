@@ -2,7 +2,8 @@ var select = document.querySelector('select');
 var para = document.querySelector('p');
 
 select.addEventListener('change', setWeather);
-
+var test_button = document.querySelector('button')
+test_button.
 function setWeather() {
     var choice = select.value;
 
@@ -21,5 +22,15 @@ function setWeather() {
             break;
         default:
             para.textContent = '';
+    }
+}
+
+function draw() {
+    ctx.clearRect(0,0,WIDTH,HEIGHT);
+    for (var i = 0; i < 100; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(255,0,0,0.5)';
+        ctx.arc(random(WIDTH), random(HEIGHT), random(50), 0, 2 * Math.PI);
+        ctx.fill();
     }
 }

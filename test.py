@@ -1,15 +1,9 @@
 import time
+import tushare as ts
 
-t1=time.process_time()
-print(t1)
-for i in range(10000):
-    pass
+#pro = ts.pro_api()  # tushare api setting
 
-t2=time.process_time()
-print(t2)
+df = ts.pro_bar(ts_code='000001.SZ', adj='hfq', start_date='20180101', end_date='20181011')
 
-t3=(t2-t1)*1000
+print(df)
 
-print(t3)
-t4 = 60-t3
-print(t4)

@@ -10,6 +10,7 @@ class ShareHistoryDownloader:
     def __init__(self):
         config.build_or_clear_dir(config.temp_share_history_directory_path)
         self.share_list_class = share_list.ShareListDownloader()
+        config.build_dir(config.cleaned_share_history_directory_path)
         self.__download_share_history()
         self.__concat_and_update_cleaned_share_history()
 
@@ -26,7 +27,10 @@ class ShareHistoryDownloader:
             ts_code = row_data.loc['ts_code'][1::]  # 去除之前加注的"'"
             print("{0} :: downloading.".format(ts_code))
             since_date = row_data.loc['since_date']
-            data_df = pro.daily(ts_code=ts_code, start_date=since_date, end_date=today_date)
+            # 日数据（非复权）
+            #data_df = pro.daily(ts_code=ts_code, start_date=since_date, end_date=today_date)
+            # 后复权日数据
+            data_df = ts.pro_bar(ts_code=ts_code, adj='hfq', start_date=since_date, end_date=today_date)
             data_csv_path = os.path.join(config.temp_share_history_directory_path, ts_code+".csv")
             data_df.to_csv(data_csv_path, index=False)
             count += 1
@@ -46,7 +50,6 @@ class ShareHistoryDownloader:
         sl = self.share_list_class.read_share_list()
         the_share_list = pd.DataFrame(sl.loc[:, 'ts_code'], columns=['ts_code'])
         the_share_list['since_date'] = config.start_date
-
         return the_share_list
 
     def __update_share_latest_date_if_exist(self, the_share_list: pd.DataFrame) -> pd.DataFrame:
