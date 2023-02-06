@@ -20,6 +20,6 @@ if __name__ == '__main__':
     #cnn_model_classifer_2days.Classifier(positive_3day_label_rule.model_file_name)
     # ------------- positive model -------------------
     positive_3day_label_rule = label_rules_2days.Positive3Days3Percent()
-    train_data_preparer.TrainingDataPreparer(positive_3day_label_rule, be_continue=True, only_label=False)
+    train_data_preparer.TrainingDataPreparer(positive_3day_label_rule, be_continue=False, only_label=False)
     cnn_model_classifer_2days.Classifier(positive_3day_label_rule.model_file_name)
 

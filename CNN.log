@@ -78,3 +78,10 @@
 2023-02-02 15:24:25.919819: iter: [18/20], train_loss: 5974.809682, valid_loss: 5973.313427, valid_accuracy:310.741623,best_valid_loss: 5973.313427, lr: 0.0000100
 2023-02-02 15:29:16.565854: iter: [19/20], train_loss: 5974.795954, valid_loss: 5973.315469, valid_accuracy:311.155738,best_valid_loss: 5973.313427, lr: 0.0000100
 2023-02-02 15:34:15.326230: iter: [20/20], train_loss: 5974.786270, valid_loss: 5973.298235, valid_accuracy:311.535232,best_valid_loss: 5973.298235, lr: 0.0000100
+2023-02-05 14:17:39.924485: iter: [1/20], train_loss: 4680.016690, valid_loss: 4681.955644, valid_accuracy:598.700576,best_valid_loss: 4681.955644, lr: 0.0010000
+2023-02-05 14:22:28.658253: iter: [2/20], train_loss: 4679.954501, valid_loss: 4681.954666, valid_accuracy:598.700576,best_valid_loss: 4681.954666, lr: 0.0010000
+2023-02-05 14:27:21.269922: iter: [3/20], train_loss: 4679.954581, valid_loss: 4681.957363, valid_accuracy:598.700576,best_valid_loss: 4681.954666, lr: 0.0010000
+2023-02-05 14:32:24.820696: iter: [4/20], train_loss: 4679.954580, valid_loss: 4681.952703, valid_accuracy:598.700576,best_valid_loss: 4681.952703, lr: 0.0010000
+2023-02-05 14:37:20.585368: iter: [5/20], train_loss: 4679.954578, valid_loss: 4681.953440, valid_accuracy:598.700576,best_valid_loss: 4681.952703, lr: 0.0010000
+2023-02-05 14:42:36.438119: iter: [6/20], train_loss: 4679.954503, valid_loss: 4681.955030, valid_accuracy:598.700576,best_valid_loss: 4681.952703, lr: 0.0010000
+2023-02-05 14:47:40.634581: iter: [7/20], train_loss: 4679.954486, valid_loss: 4681.954910, valid_accuracy:598.700576,best_valid_loss: 4681.952703, lr: 0.0010000
