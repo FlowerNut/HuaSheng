@@ -7,7 +7,7 @@ from model import train_config as trainer_config
 
 
 class TrainingDataPreparer:
-    def __init__(self, label_rule, be_continue=False, only_label=False) -> None:
+    def __init__(self, label_rule, only_label=False, be_continue=False) -> None:
         self.stream_len = 10
         self.label_rule = label_rule  # 输入类, 用于改变训练数据生成的规则；
         self.be_continue = be_continue  # 用于给出指令：重新生成数据，或续上次完成生成数据；
