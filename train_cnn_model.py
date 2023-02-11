@@ -8,6 +8,6 @@ if __name__ == '__main__':
     #cnn_model_classifer_2days.Classifier(positive_3day_label_rule.model_file_name)
     #------------- negative 2 day model -------------------
     negative_5day_label_rule = label_rules_2days.Negative5Days1percent()
-    train_data_preparer.TrainingDataPreparer(negative_5day_label_rule, only_label=False, be_continue=False)
+    train_data_preparer.TrainingDataPreparer(negative_5day_label_rule, only_label=False, be_continue=True)
     cnn_model_classifer_2days.Classifier(negative_5day_label_rule.model_file_name)
 
