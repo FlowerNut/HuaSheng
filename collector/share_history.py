@@ -8,6 +8,7 @@ import os
 
 class ShareHistoryDownloader:
     def __init__(self):
+        self.download_counting_per_minute = config.download_counting_per_minute
         config.build_or_clear_dir(config.temp_share_history_directory_path)
         self.share_list_class = share_list.ShareListDownloader()
         config.build_dir(config.cleaned_share_history_directory_path)
@@ -20,7 +21,7 @@ class ShareHistoryDownloader:
         the_share_list = self.__create_share_date_list()  # 生成初始的表格 【股票代码（用于tushare查询的），config日期】
         the_share_list = self.__update_share_latest_date_if_exist(the_share_list)  # 查询已下载历史数据，按最新数据日期更新
         today_date = datetime.date.today().strftime('%Y%m%d')
-        #  程序计数计时，tushare日行情接口限制 500次/分钟
+        #  程序计数计时，tushare复权日行情接口限制 200次/分钟
         count = 0
         t1 = time.perf_counter()
         for index, row_data in the_share_list.iterrows():
@@ -37,7 +38,7 @@ class ShareHistoryDownloader:
             t2 = time.perf_counter() - t1
             #  在接近60秒期间监测连接次数是否大于限制连接次数，如大于499次，则休眠至1分钟+1秒后
             if 57 < t2 < 60:
-                if count >= 499:
+                if count >= self.download_counting_per_minute:
                     time.sleep(61 - t2)  # 休眠至1分钟+1秒计时后
                     print("连接次数超499次/分钟，休眠（s）：", 61-t2)
                     t2 = time.perf_counter() - t1

@@ -11,6 +11,7 @@ end => no data process in this module
 """
 
 start_date = "20120220"  # 当天后，行业数据完整
+download_counting_per_minute = 199  # 复权行情接口200次/分钟
 
 # 原始数据存贮目录分配
 data_directory_path = root_config.data_directory_path
