@@ -39,8 +39,8 @@ class ShareHistoryDownloader:
             #  在接近60秒期间监测连接次数是否大于限制连接次数，如大于499次，则休眠至1分钟+1秒后
             if 57 < t2 < 60:
                 if count >= self.download_counting_per_minute:
+                    print("连接次数超{0}次/分钟，休眠（s）：".format(self.download_counting_per_minute), 61 - t2)
                     time.sleep(61 - t2)  # 休眠至1分钟+1秒计时后
-                    print("连接次数超499次/分钟，休眠（s）：", 61-t2)
                     t2 = time.perf_counter() - t1
             # 如果计时超过一分钟，重置计数和计时
             if t2 > 60:
