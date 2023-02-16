@@ -8,7 +8,6 @@ import os
 
 class ShareHistoryDownloader:
     def __init__(self):
-        self.download_counting_per_minute = config.download_counting_per_minute
         config.build_or_clear_dir(config.temp_share_history_directory_path)
         self.share_list_class = share_list.ShareListDownloader()
         config.build_dir(config.cleaned_share_history_directory_path)
@@ -22,8 +21,9 @@ class ShareHistoryDownloader:
         the_share_list = self.__update_share_latest_date_if_exist(the_share_list)  # 查询已下载历史数据，按最新数据日期更新
         today_date = datetime.date.today().strftime('%Y%m%d')
         #  程序计数计时，tushare复权日行情接口限制 200次/分钟
-        count = 0
-        t1 = time.perf_counter()
+        time_sleep = 60/config.download_counting_per_minute  # 60/200 = 0.3s
+        #count = 0
+        #t1 = time.perf_counter()
         for index, row_data in the_share_list.iterrows():
             ts_code = row_data.loc['ts_code'][1::]  # 去除之前加注的"'"
             print("{0} :: downloading.".format(ts_code))
@@ -34,18 +34,19 @@ class ShareHistoryDownloader:
             data_df = ts.pro_bar(ts_code=ts_code, adj='hfq', start_date=since_date, end_date=today_date)
             data_csv_path = os.path.join(config.temp_share_history_directory_path, ts_code+".csv")
             data_df.to_csv(data_csv_path, index=False)
-            count += 1
-            t2 = time.perf_counter() - t1
-            #  在接近60秒期间监测连接次数是否大于限制连接次数，如大于499次，则休眠至1分钟+1秒后
-            if 57 < t2 < 60:
-                if count >= self.download_counting_per_minute:
-                    print("连接次数超{0}次/分钟，休眠（s）：".format(self.download_counting_per_minute), 61 - t2)
-                    time.sleep(61 - t2)  # 休眠至1分钟+1秒计时后
-                    t2 = time.perf_counter() - t1
+            time.sleep(time_sleep)
+            #count += 1
+            #t2 = time.perf_counter() - t1
+            #  在接近60秒期间监测连接次数是否大于限制连接次数，如大于199次，则休眠至1分钟+1秒后
+            #if 57 < t2 < 60:
+                #if count >= self.download_counting_per_minute:
+                    #print("连接次数超{0}次/分钟，休眠（s）：".format(self.download_counting_per_minute), 61 - t2)
+                    #time.sleep(61 - t2)  # 休眠至1分钟+1秒计时后
+                    #t2 = time.perf_counter() - t1
             # 如果计时超过一分钟，重置计数和计时
-            if t2 > 60:
-                count = 0
-                t1 = time.perf_counter()
+            #if t2 > 60:
+                #count = 0
+                #t1 = time.perf_counter()
 
     def __create_share_date_list(self) -> pd.DataFrame:
         sl = self.share_list_class.read_share_list()
