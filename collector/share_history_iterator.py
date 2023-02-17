@@ -15,7 +15,7 @@ class HistoryCSVIterator:
         return len(self.cleaned_csv_files_path)
 
     def __getitem__(self, index):
-        print(self.cleaned_csv_files_path[index])
+        print("Read file::", self.cleaned_csv_files_path[index])
         code = self.cleaned_csv_files_path[index][-13:-7]
         cleaned_share_history_df = pd.read_csv(self.cleaned_csv_files_path[index])
         cleaned_share_history_df.set_index('trade_date', inplace=True)

@@ -147,7 +147,9 @@ class PredictByCNN:
                     single_predict_df = pd.DataFrame([[code, latest_date, prediction[prediction_len - 2][0],
                                                        prediction[prediction_len - 1][0]]],
                                                      columns=['code', 'date', 'value1', 'value2'])
-                    print(single_predict_df)
+                    print("Predicting {0}: date={1}, value1={2}, value2={3}".format(code, latest_date,
+                                                                                    prediction[prediction_len - 2][0],
+                                                                                    prediction[prediction_len - 1][0]))
                     predict_pd_table = pd.concat([predict_pd_table, single_predict_df])
         # 按条件过滤、排序再输出
         #predict_pd_table = predict_pd_table.loc[(predict_pd_table['value1'] > 0.618) & (predict_pd_table['value2'] > 0.618)]
