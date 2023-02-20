@@ -9,7 +9,8 @@ training_data_directory_path = os.path.join(data_directory_path, "Train")
 feature_data_directory_path = os.path.join(training_data_directory_path, "Feature")
 label_data_directory_path = os.path.join(training_data_directory_path, "Label")
 
-
+steam_length = 10
+taken_fft_channel_numbers = 8
 
 # 文件夹清空&创建
 def build_or_clear_dir(dir_path) -> None:

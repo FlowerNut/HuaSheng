@@ -5,7 +5,7 @@ import pandas as pd
 from scipy import fft
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-from model import predict_config
+from model import predict_config, train_config
 import os
 
 
@@ -16,8 +16,8 @@ class PredictByCNN:
         # ----------初始化存贮应用数据文件夹---------
         app_config.build_dir(app_config.application_data_directory_path)
         # --------以下数据需与训练模型/fft生成参数一致-------
-        self.__stream_length = 10
-        self.taken_fft_channel_numbers = 8  # 分解成8个周期波型
+        self.__stream_length = train_config.steam_length
+        self.taken_fft_channel_numbers = train_config.taken_fft_channel_numbers  # 分解成8个周期波型
         self.data_buffer_days = 618  # 数据决定参与计算fft的日数据量，与cnn的计算深度stream len可以为不同长度
         self.numbers_of_prediction = self.label_rule.numbers_of_prediction  # 预测明天，后天，共两天； self.__creating_label_df的标签计算需要根据该值调整
         # -------------加载训练模型----------------

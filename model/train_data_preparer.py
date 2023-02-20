@@ -8,10 +8,10 @@ from model import train_config as trainer_config
 
 class TrainingDataPreparer:
     def __init__(self, label_rule, only_label=False, be_continue=False) -> None:
-        self.stream_len = 10
+        self.stream_len = trainer_config.steam_length
         self.label_rule = label_rule  # 输入类, 用于改变训练数据生成的规则；
         self.be_continue = be_continue  # 用于给出指令：重新生成数据，或续上次完成生成数据；
-        self.taken_fft_channel_numbers = 8  # 分解成8个周期波型
+        self.taken_fft_channel_numbers = trainer_config.taken_fft_channel_numbers  # 分解成8个周期波型
         self.numbers_of_prediction = self.label_rule.numbers_of_prediction  # 预测明天，后天，共两天； self.__creating_label_df的标签计算需要根据该值调整
         self.data_buffer_days = 618  # 数据决定参与计算fft的日数据量，与cnn的计算深度stream len可以为不同长度
         if only_label:

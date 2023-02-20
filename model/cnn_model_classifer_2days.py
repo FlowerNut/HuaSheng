@@ -48,7 +48,7 @@ class Classifier:
         self.learning_rate = 1e-3
         self.epoch = 20
         self.batch_size = 100
-        self.stream_len = 10  # 使用两周fft数据进行预测
+        self.stream_len = train_config.steam_length  # 使用两周fft数据进行预测
         self.__trainer()
 
     # 保存日志
