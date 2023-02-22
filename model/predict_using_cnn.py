@@ -12,6 +12,7 @@ import os
 class PredictByCNN:
     def __init__(self, label_rule, predict_result_file_path):
         self.label_rule = label_rule
+        self.the_day = self.label_rule.the_day  # 用于提取fft指定日子结果，与label提出日子对应
         self.predict_result_file_path = predict_result_file_path
         # ----------初始化存贮应用数据文件夹---------
         app_config.build_dir(app_config.application_data_directory_path)
@@ -52,9 +53,12 @@ class PredictByCNN:
                         (clean_share_df.iloc[0:current_row_index+1, :].copy(), self.taken_fft_channel_numbers)
                     # 只取当日+1天的fft结果（获得数据当天已收盘，取下一天数据作预测），以及当日+self.numbers_of_prediction天后fft结果
                     # 提取fft的当日后一日和self.numbers_of_prediction后一日数据(注：如用其它数据，需要注意周六日无数据，一周为5天）
-                    section_fft_composed_periods_prices_df = pd.concat([fft_composed_periods_prices_df.iloc[current_row_index + 1, :]
-                            , fft_composed_periods_prices_df.iloc[current_row_index + self.numbers_of_prediction, :]],
-                        axis=1, ignore_index=True)  # 指示具体索引而非范围尾数，需要指针-1
+                    # self.the_day 以0为始，此处需再+1，因当前日为0，而the_day的0已是"明天"
+                    section_fft_composed_periods_prices_df = pd.concat([fft_composed_periods_prices_df.iloc
+                                                                        [current_row_index + self.the_day[0] + 1, :],
+                                                                        fft_composed_periods_prices_df.iloc
+                                                                        [current_row_index + self.the_day[1] + 1, :]],
+                                                                       axis=1, ignore_index=True)  # 指示具体索引而非范围尾数，需要指针-1
                     # 周期数据按列遍历，首尾相接， 将周期数据合并至pic_df列向量（作为图片识别）
                     pic_df = pd.concat([pic_df, self.__reshape_df_into_one_row(section_fft_composed_periods_prices_df.T)],
                                        ignore_index=True, sort=False)  # .T转为按频率的列向量，保持同一频率数值相近

@@ -5,6 +5,7 @@ import os
 class Positive3Days1Percent:
     def __init__(self):
         self.numbers_of_prediction = 3
+        self.the_day = [1, 2]
         self.model_file_name = 'cnn_net_{0}day_positive(1percent).pth'.format(self.numbers_of_prediction)
 
     def create_label_df(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -24,6 +25,7 @@ class Positive3Days1Percent:
 class Negative5Days1percent:
     def __init__(self):
         self.numbers_of_prediction = 5  # 2 weeks
+        self.the_day = [3, 5]
         self.model_file_name = 'cnn_net_{0}day_negative(1percent).pth'.format(self.numbers_of_prediction)
 
     def create_label_df(self, df: pd.DataFrame) -> pd.DataFrame:

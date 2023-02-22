@@ -12,6 +12,7 @@ class TrainingDataPreparer:
         self.label_rule = label_rule  # 输入类, 用于改变训练数据生成的规则；
         self.be_continue = be_continue  # 用于给出指令：重新生成数据，或续上次完成生成数据；
         self.taken_fft_channel_numbers = trainer_config.taken_fft_channel_numbers  # 分解成8个周期波型
+        self.the_day = self.label_rule.the_day # 用于提取fft指定日子结果，与label提出日子对应
         self.numbers_of_prediction = self.label_rule.numbers_of_prediction  # 预测明天，后天，共两天； self.__creating_label_df的标签计算需要根据该值调整
         self.data_buffer_days = 618  # 数据决定参与计算fft的日数据量，与cnn的计算深度stream len可以为不同长度
         if only_label:
@@ -135,8 +136,9 @@ class TrainingDataPreparer:
                         (cleaned_share_history_df.iloc[0:current_row_index+1, :].copy(), self.taken_fft_channel_numbers)
                     # 只取当日+1天的fft结果（获得数据当天已收盘，取下一天数据作预测），以及当日+self.numbers_of_prediction天后fft结果
                     # 因fft生成是固定长度，取值也是固定位置，而非移动,当前日+1 = self.data_buffer_days+1，此处取除当日之外的，以后的两个预测日的fft
-                    section_fft_composed_periods_prices_df = pd.concat([fft_composed_periods_prices_df.iloc[current_row_index + 1, :],
-                                                                        fft_composed_periods_prices_df.iloc[current_row_index + self.numbers_of_prediction, :]],
+                    # self.the_day 以0为始，此处需再+1，因当前日为0，而the_day的0已是"明天"
+                    section_fft_composed_periods_prices_df = pd.concat([fft_composed_periods_prices_df.iloc[current_row_index + self.the_day[0] + 1, :],
+                                                                        fft_composed_periods_prices_df.iloc[current_row_index + self.the_day[1] + 1, :]],
                                                                        axis=1, ignore_index=True)  # 指示具体索引而非范围尾数，需要指针-1
                     # 周期数据按列遍历，首尾相接， 将周期数据合并至pic_df列向量（作为图片识别）
                     pic_df = pd.concat([pic_df, self.__reshape_df_into_one_row(section_fft_composed_periods_prices_df.T)],
@@ -196,17 +198,17 @@ class TrainingDataPreparer:
             label_df.to_csv(label_csv_name, index=False)
             print("{0} label ====> ok!".format(cleaned_history_file_name[0:6]))
 
-    def __reshape_df_into_one_row(self,df:pd.DataFrame)->pd.DataFrame: #输出为多行单列的“向量” df
+    def __reshape_df_into_one_row(self, df: pd.DataFrame) -> pd.DataFrame: #输出为多行单列的“向量” df
         column_count = df.shape[1]
         data = []
         for i in range(column_count):
-            data.append(df.iloc[:,i].tolist())
+            data.append(df.iloc[:, i].tolist())
         # 存入pic_df
         flatten_data = [y for x in data for y in x]
         pic_df = pd.DataFrame(flatten_data)
         return pic_df
 
-    def __closed_price_fft_into_multiple_periods_prices_df(self,share_history_df:pd.DataFrame, taken_fft_channel_numbers:int)->pd.DataFrame:
+    def __closed_price_fft_into_multiple_periods_prices_df(self, share_history_df: pd.DataFrame, taken_fft_channel_numbers:int) -> pd.DataFrame:
         price_list = share_history_df['close'].to_numpy()
         column_names = ["F{0}".format(i) for i in range(taken_fft_channel_numbers)]
         fft_df = pd.DataFrame(columns=column_names)  # 结果容器
